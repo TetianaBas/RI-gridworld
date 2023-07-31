@@ -1,0 +1,110 @@
+import numpy as np
+
+class Environment:
+    def __init__(self, rows, columns):
+        self.rows = rows
+        self.columns = columns
+        self.actions = ['up', 'right', 'down', 'left']
+        self.rewards = np.full((rows, columns), -100.)
+        self.aisles = {}
+        self.aisles[1] = [i for i in range(1, 9)]
+        self.aisles[2] = [1, 7, 9]
+        self.aisles[3] = [i for i in range(1, 8)]
+        self.aisles[3].append(9)
+        self.aisles[4] = [3, 7]
+        self.aisles[5] = [i for i in range(9)]
+        self.aisles[6] = [5]
+        self.aisles[7] = [i for i in range(1, 9)]
+        self.aisles[8] = [3, 7]
+        self.aisles[9] = [i for i in range(9)]
+
+        # set the rewards for all aisle locations
+        for i in range(1, 10):
+            for j in self.aisles[i]:
+                self.rewards[i, j] = -1
+        self.rewards[0, 5] = 100
+
+class Agent:
+    def __init__(self, environment, epsilon, discount_factor, learning_rate):
+        self.environment = environment
+        self.epsilon = epsilon
+        self.discount_factor = discount_factor
+        self.learning_rate = learning_rate
+        self.q_values = np.zeros((environment.rows, environment.columns, 4))
+
+    def is_terminal_state(self, current_row_index, current_column_index):
+        return self.environment.rewards[current_row_index, current_column_index] != -1
+
+    def get_starting_location(self):
+        current_row_index = np.random.randint(self.environment.rows)
+        current_column_index = np.random.randint(self.environment.columns)
+        while self.is_terminal_state(current_row_index, current_column_index):
+            current_row_index = np.random.randint(self.environment.rows)
+            current_column_index = np.random.randint(self.environment.columns)
+        return current_row_index, current_column_index
+
+    def get_next_action(self, current_row_index, current_column_index):
+        if np.random.random() < self.epsilon:
+            return np.argmax(self.q_values[current_row_index, current_column_index])
+        else:
+            return np.random.randint(4)
+
+    def get_next_location(self, current_row_index, current_column_index, action_index):
+        new_row_index = current_row_index
+        new_column_index = current_column_index
+        action = self.environment.actions[action_index]
+        if action == 'up' and current_row_index > 0:
+            new_row_index -= 1
+        elif action == 'right' and current_column_index < self.environment.columns - 1:
+            new_column_index += 1
+        elif action == 'down' and current_row_index < self.environment.rows - 1:
+            new_row_index += 1
+        elif action == 'left' and current_column_index > 0:
+            new_column_index -= 1
+        return new_row_index, new_column_index
+
+    def get_shortest_path(self, start_row_index, start_column_index):
+        if self.is_terminal_state(start_row_index, start_column_index):
+            return []
+        else:
+            current_row_index, current_column_index = start_row_index, start_column_index
+            shortest_path = [[current_row_index, current_column_index]]
+        while not self.is_terminal_state(current_row_index, current_column_index):
+            action_index = self.get_next_action(current_row_index, current_column_index)
+            current_row_index, current_column_index = self.get_next_location(current_row_index, current_column_index, action_index)
+            shortest_path.append([current_row_index, current_column_index])
+        return shortest_path
+
+    def train(self, episodes):
+        for episode in range(episodes):
+            row_index, column_index = self.get_starting_location()
+            while not self.is_terminal_state(row_index, column_index):
+                action_index = self.get_next_action(row_index, column_index)
+                old_row_index, old_column_index = row_index, column_index
+                row_index, column_index = self.get_next_location(row_index, column_index, action_index)
+
+                reward = self.environment.rewards[row_index, column_index]
+                old_q_value = self.q_values[old_row_index, old_column_index, action_index]
+                temporal_difference = reward + (self.discount_factor * np.max(self.q_values[row_index, column_index])) - old_q_value
+
+                new_q_value = old_q_value + (self.learning_rate * temporal_difference)
+                self.q_values[old_row_index, old_column_index, action_index] = new_q_value
+
+        print('Training complete!')
+
+
+# Define the environment
+rows = 11
+columns = 10
+environment = Environment(rows, columns)
+
+# Define training parameters
+epsilon = 0.9
+discount_factor = 0.9
+learning_rate = 0.9
+
+# Create the agent and train
+agent = Agent(environment, epsilon, discount_factor, learning_rate)
+agent.train(1000)
+
+print(get_shortest_path(3, 9)) 
