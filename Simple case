@@ -1,0 +1,90 @@
+import numpy as np
+
+#for environment 
+rows = 3
+columns = 4
+win = (0, 3)
+lose = (1, 1)
+start_state = (1,1)
+
+#for agent 
+learning_rate = 0.2
+elipson = 0.3 
+gamma = 0.9 
+actions = ["up", "down", "left", "right"]
+
+arr = np.zeros((rows, columns))
+arr[win] = 1
+arr[lose] = -10
+
+q_values = {(r, c): {a: 0 for a in actions} for r in range(rows) for c in range(columns)}
+
+
+    
+def end(row, column):
+    if np.any((arr[row, column] == win) | (arr[row, column] == lose)):
+        return True
+    return False
+        
+def choose_action(elipson, row_index, column_index):
+    if np.random.uniform(0, 1) <= elipson:
+        action_index = np.random.choice(len(actions))
+    else:
+        current_reward = -np.inf
+        action_index = None
+        for a in range(len(actions)):
+            next_row, next_col = next_state(a, row_index, column_index)
+            next_reward = zeors_array[next_row, next_col]
+            if next_reward >= current_reward:
+                action_index = a
+                current_reward = next_reward
+    return action_index
+
+
+def next_state(action, row_index, column_index):
+    updated_row_index = row_index
+    updated_column_index = column_index
+    if action == "up" and row_index > 0:
+        updated_row_index -= 1
+    elif action == "down" and row_index < rows - 1:
+        updated_row_index += 1
+    elif action == "left" and column_index > 0:
+        updated_column_index -= 1
+    elif action == "right" and column_index < columns - 1:
+        updated_column_index += 1
+    return updated_row_index, updated_column_index
+
+
+    import numpy as np
+
+# ... Your previous code ...
+
+def play(actions, rounds=1000):
+    q_values = {(r, c): {a: 0 for a in actions} for r in range(rows) for c in range(columns)}
+
+    for _ in range(rounds):
+        state = start_state
+        while not end(state[0], state[1]):
+            action_index = choose_action(elipson, state[0], state[1])
+            action = actions[action_index]
+
+            next_state_row, next_state_column = next_state(action, state[0], state[1])
+            reward = arr[next_state_row, next_state_column]
+
+            # Find the maximum Q-value in the next state
+            next_max_q_value = max(q_values[(next_state_row, next_state_column)].values())
+
+            # Calculate the temporal difference
+            temporal_difference = reward + (gamma * next_max_q_value) - q_values[state][action]
+
+            # Update the Q-value for the previous state and action pair
+            q_values[state][action] += learning_rate * temporal_difference
+
+            state = (next_state_row, next_state_column)
+
+    print("Learned Q-Values:")
+    for state, actions in q_values.items():
+        print(state, ":", actions)
+
+# Call the play function and pass the actions list as an argument
+play(actions, rounds=1000)
